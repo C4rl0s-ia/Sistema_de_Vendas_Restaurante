@@ -1,0 +1,277 @@
+// Constantes
+const PRECO_QUENTINHA = 20.0
+const PRECO_BEBIDA = 7.0
+const PRECO_EMBALAGEM = 0.50
+const PRECO_POR_KG = 60.0
+const MAX_VENDAS_DIA = 100
+
+// Enum TipoVenda
+enum TipoVenda {
+    REFEICAO = 0,
+    QUENTINHA = 1,
+    BEBIDA = 2
+}
+
+// Estruturas
+registro Venda {
+    texto nome_cliente
+    inteiro tipo_venda
+    real peso_refeicao
+    inteiro quantidade_bebida
+    real valor_total_venda
+    inteiro dia
+    inteiro mes
+}
+
+registro VendasDia {
+    Venda vendas[MAX_VENDAS_DIA]
+    inteiro contador_vendas
+    inteiro dia
+    inteiro mes
+}
+
+// Variáveis principais
+VendasDia historico[366]
+inteiro totalDias = 0
+
+// Função que calcula o valor da venda
+função real calcular_valor_venda(Venda v)
+inicio
+    se v.tipo_venda == REFEICAO entao
+        v.valor_total_venda <- v.peso_refeicao * PRECO_POR_KG
+    senao
+        se v.tipo_venda == QUENTINHA entao
+            v.valor_total_venda <- PRECO_QUENTINHA + PRECO_EMBALAGEM
+        senao
+            se v.tipo_venda == BEBIDA entao
+                v.valor_total_venda <- v.quantidade_bebida * PRECO_BEBIDA
+                retorne v.valor_total_venda
+            fimse
+        fimse
+    fimse
+
+    se v.quantidade_bebida > 0 entao
+        v.valor_total_venda <- v.valor_total_venda + (v.quantidade_bebida * PRECO_BEBIDA)
+    fimse
+
+    retorne v.valor_total_venda
+fim
+
+// Função para registrar venda
+procedimento registrar_venda(ref VendasDia diaSelecionado)
+inicio
+    se diaSelecionado.contador_vendas >= MAX_VENDAS_DIA entao
+        escreva("Limite máximo de vendas neste dia atingido!")
+        retorne
+    fimse
+
+    Venda novaVenda
+
+    escreva("Nome do cliente: ")
+    leia(novaVenda.nome_cliente)
+
+    escreva("Tipo da venda (0=Refeição, 1=Quentinha, 2=Bebida): ")
+    leia(novaVenda.tipo_venda)
+
+    se novaVenda.tipo_venda == REFEICAO entao
+        escreva("Peso da refeição (kg): ")
+        leia(novaVenda.peso_refeicao)
+    senao
+        novaVenda.peso_refeicao <- 0
+    fimse
+
+    escreva("Quantidade de bebidas: ")
+    leia(novaVenda.quantidade_bebida)
+
+    novaVenda.dia <- diaSelecionado.dia
+    novaVenda.mes <- diaSelecionado.mes
+
+    novaVenda.valor_total_venda <- calcular_valor_venda(novaVenda)
+
+    diaSelecionado.vendas[diaSelecionado.contador_vendas] <- novaVenda
+    diaSelecionado.contador_vendas <- diaSelecionado.contador_vendas + 1
+
+    escreva("Venda registrada com sucesso!")
+fim
+
+// Função relatório diário
+procedimento relatorio_diario(VendasDia diaSelecionado)
+inicio
+    real totalDia <- 0
+
+    escreva("Relatório do dia ", diaSelecionado.dia, "/", diaSelecionado.mes)
+
+    para i de 0 ate diaSelecionado.contador_vendas - 1 faca
+        Venda v <- diaSelecionado.vendas[i]
+        escreva("Cliente: ", v.nome_cliente)
+        se v.tipo_venda == REFEICAO entao
+            escreva("Tipo: Refeição")
+            escreva("Peso: ", v.peso_refeicao, " kg")
+        senao
+            se v.tipo_venda == QUENTINHA entao
+                escreva("Tipo: Quentinha")
+            senao
+                escreva("Tipo: Bebida")
+            fimse
+            escreva("Peso: 0 kg")
+        fimse
+        escreva("Valor: R$", v.valor_total_venda)
+        totalDia <- totalDia + v.valor_total_venda
+    fimpara
+
+    escreva("Total vendido no dia: R$", totalDia)
+fim
+
+// Função relatório mensal
+procedimento relatorio_mensal(VendasDia historico[], inteiro totalDias)
+inicio
+    inteiro mesDesejado
+    real totalMes <- 0
+
+    escreva("Digite o mês para consulta (1 a 12): ")
+    leia(mesDesejado)
+
+    escreva("Relatório do mês ", mesDesejado)
+
+    para i de 0 ate totalDias - 1 faca
+        se historico[i].mes == mesDesejado entao
+            escreva("Dia ", historico[i].dia)
+            para j de 0 ate historico[i].contador_vendas - 1 faca
+                Venda v <- historico[i].vendas[j]
+                escreva("Cliente: ", v.nome_cliente, " Valor: R$", v.valor_total_venda)
+                totalMes <- totalMes + v.valor_total_venda
+            fimpara
+        fimse
+    fimpara
+
+    escreva("Total do mês: R$", totalMes)
+fim
+
+// Função relatório anual ordenado
+procedimento relatorio_anual_ordenado(VendasDia historico[], inteiro totalDias)
+inicio
+    real totaisPorMes[12]
+    inteiro i, j
+
+    // Inicializar totais
+    para i de 0 ate 11 faca
+        totaisPorMes[i] <- 0
+    fimpara
+
+    // Somar vendas por mês
+    para i de 0 ate totalDias - 1 faca
+        para j de 0 ate historico[i].contador_vendas - 1 faca
+            inteiro indiceMes <- historico[i].mes - 1
+            totaisPorMes[indiceMes] <- totaisPorMes[indiceMes] + historico[i].vendas[j].valor_total_venda
+        fimpara
+    fimpara
+
+    // Estrutura auxiliar
+    registro MesTotal {
+        inteiro mes
+        real total
+    }
+    MesTotal listaMeses[12]
+
+    para i de 0 ate 11 faca
+        listaMeses[i].mes <- i + 1
+        listaMeses[i].total <- totaisPorMes[i]
+    fimpara
+
+    // Ordenar decrescente (Bubble Sort)
+    para i de 0 ate 10 faca
+        para j de 0 ate 10 - i faca
+            se listaMeses[j].total < listaMeses[j + 1].total entao
+                MesTotal temp <- listaMeses[j]
+                listaMeses[j] <- listaMeses[j + 1]
+                listaMeses[j + 1] <- temp
+            fimse
+        fimpara
+    fimpara
+
+    // Exibir resultado
+    escreva("Relatório anual (do maior para o menor total)")
+    para i de 0 ate 11 faca
+        se listaMeses[i].total > 0 entao
+            escreva("Mês ", listaMeses[i].mes, " Total: R$", listaMeses[i].total)
+        fimse
+    fimpara
+fim
+
+// Programa principal
+inicio
+    inteiro opcao
+    repetir
+        escreva("1- Registrar venda")
+        escreva("2- Relatório diário")
+        escreva("3- Relatório mensal")
+        escreva("4- Relatório anual ordenado")
+        escreva("0- Sair")
+        leia(opcao)
+
+        escolha opcao
+        caso 1:
+            inteiro dia, mes
+            escreva("Dia da venda:")
+            leia(dia)
+            escreva("Mês da venda:")
+            leia(mes)
+
+            VendasDia* diaSelecionado <- NULL
+
+            para i de 0 ate totalDias - 1 faca
+                se historico[i].dia == dia e historico[i].mes == mes entao
+                    diaSelecionado <- &historico[i]
+                fimse
+            fimpara
+
+            se diaSelecionado == NULL entao
+                historico[totalDias].dia <- dia
+                historico[totalDias].mes <- mes
+                historico[totalDias].contador_vendas <- 0
+                diaSelecionado <- &historico[totalDias]
+                totalDias <- totalDias + 1
+            fimse
+
+            registrar_venda(*diaSelecionado)
+        fimcaso
+
+        caso 2:
+            inteiro diaConsulta, mesConsulta
+            escreva("Dia a consultar:")
+            leia(diaConsulta)
+            escreva("Mês a consultar:")
+            leia(mesConsulta)
+
+            VendasDia* diaSelecionado <- NULL
+
+            para i de 0 ate totalDias - 1 faca
+                se historico[i].dia == diaConsulta e historico[i].mes == mesConsulta entao
+                    diaSelecionado <- &historico[i]
+                fimse
+            fimpara
+
+            se diaSelecionado != NULL entao
+                relatorio_diario(*diaSelecionado)
+            senao
+                escreva("Nenhuma venda neste dia.")
+            fimse
+        fimcaso
+
+        caso 3:
+            relatorio_mensal(historico, totalDias)
+        fimcaso
+
+        caso 4:
+            relatorio_anual_ordenado(historico, totalDias)
+        fimcaso
+
+        caso 0:
+            escreva("Saindo...")
+        fimcaso
+
+        outrocaso:
+            escreva("Opção inválida.")
+        fimcaso
+    ate opcao == 0
+fim
